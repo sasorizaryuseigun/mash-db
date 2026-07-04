@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { describe, test, expect } from 'vitest';
 import {
   computeGroupId,
@@ -39,7 +41,7 @@ describe('createGroupIdentity', () => {
 });
 
 describe('DEFAULT_SERVICE_TYPE', () => {
-  test('is _lan-sync-db._tcp', () => {
-    expect(DEFAULT_SERVICE_TYPE).toBe('_lan-sync-db._tcp');
+  test('is _mesh-db._tcp', () => {
+    expect(DEFAULT_SERVICE_TYPE).toBe('_mesh-db._tcp');
   });
 });

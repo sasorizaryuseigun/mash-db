@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { WebSocketServer, WebSocket } from 'ws';
 import type { RawData } from 'ws';
 import type { AddressInfo } from 'node:net';
@@ -14,7 +16,7 @@ export type PeerConnection = {
 };
 
 export type TransportOptions = {
-  groupId: string;
+  groupId: string | undefined;
   peerId: string;
   port?: number;
 };
@@ -26,7 +28,7 @@ export type TransportHandle = {
   close(): Promise<void>;
 };
 
-function makeHello(groupId: string, peerId: string): string {
+function makeHello(groupId: string | undefined, peerId: string): string {
   return JSON.stringify({
     type: 'hello',
     groupId,
@@ -72,7 +74,7 @@ export function createTransport(
         onPeerCb?.(pc);
       })
       .catch((err) => {
-        console.warn(`[lan-sync-db] handshake failed: ${err}`);
+        console.warn(`[mesh-db] handshake failed: ${err}`);
       });
   });
 
@@ -123,7 +125,7 @@ export function createTransport(
             new Promise<void>((resolve) =>
               setTimeout(() => {
                 console.warn(
-                  `[lan-sync-db] WebSocket server close timed out after ${CLOSE_TIMEOUT_MS}ms`,
+                  `[mesh-db] WebSocket server close timed out after ${CLOSE_TIMEOUT_MS}ms`,
                 );
                 resolve();
               }, CLOSE_TIMEOUT_MS),
@@ -201,7 +203,14 @@ export function createTransport(
 
         const hello = msg as unknown as HelloMessage;
 
-        if (hello.groupId !== groupId) {
+        const sameGroup =
+          groupId !== undefined &&
+          hello.groupId !== undefined &&
+          hello.groupId === groupId;
+        const bothUngrouped =
+          groupId === undefined && hello.groupId === undefined;
+
+        if (!sameGroup && !bothUngrouped) {
           removeHandlers();
           ws.send(
             JSON.stringify({
@@ -284,7 +293,7 @@ export function createTransport(
           ws.send(msg);
         } else {
           console.warn(
-            `[lan-sync-db] Dropping message to ${remotePeerId}: WebSocket not OPEN (state=${ws.readyState})`,
+            `[mesh-db] Dropping message to ${remotePeerId}: WebSocket not OPEN (state=${ws.readyState})`,
           );
         }
       },

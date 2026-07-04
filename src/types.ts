@@ -1,8 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 export type TableSchema = {
   primaryKey: string;
 };
 
 export type SyncOptions = {
+  enabled?: boolean;
   discovery?: boolean;
   transport?: boolean;
   port?: number;
@@ -10,22 +13,25 @@ export type SyncOptions = {
   peerId?: string;
 };
 
+export type SeedData = Record<string, Record<string, unknown>[]>;
+
 export type CreateLanSyncDbOptions = {
-  groupKey: string;
+  groupKey?: string;
   dir: string;
   tables: Record<string, TableSchema>;
   sync?: SyncOptions;
+  seed?: SeedData;
 };
 
 export type PeerInfo = {
   peerId: string;
-  groupId: string;
+  groupId: string | undefined;
   state: 'connected';
 };
 
 export type LanSyncDb = {
   peerId: string;
-  groupId: string;
+  groupId: string | undefined;
   port: number | undefined;
   table(name: string): TableHandle;
   connect(host: string, port: number): Promise<void>;
@@ -49,7 +55,7 @@ export type GroupIdentity = {
 
 export type HelloMessage = {
   type: 'hello';
-  groupId: string;
+  groupId?: string;
   peerId: string;
   protocol: number;
 };

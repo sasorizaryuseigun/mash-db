@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { MergeableStore } from 'tinybase';
 import { createCustomSynchronizer } from 'tinybase/synchronizers';
 import type { Synchronizer } from 'tinybase/synchronizers';

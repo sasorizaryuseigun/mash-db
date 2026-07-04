@@ -1,9 +1,9 @@
 {
-  "name": "lan-sync-db",
+  "name": "mesh-db",
   "version": "1.0.0",
   "type": "module",
   "license": "AGPL-3.0-only",
-  "description": "LAN-synchronized embeddable table DB for Node.js",
+  "description": "LAN-synchronized embeddable table DB for Node.js / Bun",
   "main": "./dist/index.js",
   "exports": {
     ".": {
@@ -16,7 +16,9 @@
   ],
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "test": "vitest run",
+    "test:bun": "bun x vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -33,6 +35,7 @@
     "@types/node": "^20.0.0",
     "@types/ws": "^8.0.0",
     "eslint": "^10.6.0",
+    "jiti": "^2.7.0",
     "prettier": "^3.9.4",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.62.1",

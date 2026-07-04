@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { describe, test, expect } from 'vitest';
 import { createTransport } from '../src/transport.js';
 
@@ -106,5 +108,55 @@ describe('createTransport', () => {
     const start = Date.now();
     await t.close();
     expect(Date.now() - start).toBeLessThan(5000);
+  });
+
+  test('no groupId handshake succeeds', async () => {
+    const tA = createTransport({
+      groupId: undefined,
+      peerId: 'peer-A',
+      port: 0,
+    });
+    await tA;
+
+    const tB = createTransport({
+      groupId: undefined,
+      peerId: 'peer-B',
+      port: 0,
+    });
+    await tB;
+
+    const connectPromise = new Promise<{ peerId: string }>((resolve) => {
+      tA.onPeer((conn) => {
+        resolve({ peerId: conn.peerId });
+      });
+    });
+
+    await tB.connect('127.0.0.1', tA.port);
+    const result = await connectPromise;
+    expect(result.peerId).toBe('peer-B');
+
+    await tA.close();
+    await tB.close();
+  });
+
+  test('groupId mismatch when one side has no groupId', async () => {
+    const tA = createTransport({
+      groupId: 'group-A',
+      peerId: 'peer-A',
+      port: 0,
+    });
+    await tA;
+
+    const tB = createTransport({
+      groupId: undefined,
+      peerId: 'peer-B',
+      port: 0,
+    });
+    await tB;
+
+    await expect(tB.connect('127.0.0.1', tA.port)).rejects.toThrow();
+
+    await tA.close();
+    await tB.close();
   });
 });

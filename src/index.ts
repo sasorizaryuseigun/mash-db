@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { CreateLanSyncDbOptions, LanSyncDb } from './types.js';
 import { createGroupIdentity, DEFAULT_SERVICE_TYPE } from './group.js';
 import { createStore } from './store.js';
@@ -10,16 +12,28 @@ import { createPeerManager } from './peer-manager.js';
 export async function createLanSyncDb(
   opts: CreateLanSyncDbOptions,
 ): Promise<LanSyncDb> {
-  const group = createGroupIdentity(opts.groupKey);
+  const hasGroup = opts.groupKey !== undefined;
+  const group = hasGroup ? createGroupIdentity(opts.groupKey!) : undefined;
   const syncOpts = opts.sync ?? {};
-  const enableDiscovery = syncOpts.discovery !== false;
-  const enableTransport = syncOpts.transport !== false;
+  const syncEnabled = syncOpts.enabled ?? hasGroup;
+  const enableTransport = syncEnabled && syncOpts.transport !== false;
+  const enableDiscovery =
+    syncEnabled && hasGroup && enableTransport && syncOpts.discovery !== false;
   const serviceType = syncOpts.serviceType ?? DEFAULT_SERVICE_TYPE;
 
   const { store, table } = createStore(opts.tables);
   const persistence = initPersistence(store, opts.dir, syncOpts.peerId);
 
   await persistence.start();
+
+  if (opts.seed && Object.keys(store.getTables()).length === 0) {
+    for (const [tableName, rows] of Object.entries(opts.seed)) {
+      const t = table(tableName);
+      for (const row of rows) {
+        await t.upsert(row);
+      }
+    }
+  }
 
   const peerManager = createPeerManager(store, persistence.peerId);
 
@@ -73,7 +87,7 @@ export async function createLanSyncDb(
 
   if (enableTransport) {
     const transport = createTransport({
-      groupId: group.groupId,
+      groupId: group?.groupId,
       peerId: persistence.peerId,
       port: syncOpts.port,
     });
@@ -93,7 +107,7 @@ export async function createLanSyncDb(
     if (enableDiscovery) {
       const discovery = createDiscovery(
         {
-          groupId: group.groupId,
+          groupId: group!.groupId,
           peerId: persistence.peerId,
           port: transport.port,
           serviceType,
@@ -118,7 +132,7 @@ export async function createLanSyncDb(
 
   const db: LanSyncDb = {
     peerId: persistence.peerId,
-    groupId: group.groupId,
+    groupId: group?.groupId,
     port: transportPort,
 
     table(name) {
@@ -126,6 +140,9 @@ export async function createLanSyncDb(
     },
 
     async connect(host, port) {
+      if (!syncEnabled) {
+        throw new Error('Sync is disabled');
+      }
       if (!transportConnect) {
         throw new Error('Transport is disabled');
       }
@@ -135,7 +152,7 @@ export async function createLanSyncDb(
     getPeers() {
       return peerManager.getPeers().map((pid) => ({
         peerId: pid,
-        groupId: group.groupId,
+        groupId: group?.groupId,
         state: 'connected' as const,
       }));
     },
@@ -164,6 +181,7 @@ export type {
   CreateLanSyncDbOptions,
   SyncOptions,
   TableSchema,
+  SeedData,
 } from './types.js';
 
 export {

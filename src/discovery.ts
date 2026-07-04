@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import Bonjour from 'bonjour-service';
 import { DEFAULT_SERVICE_TYPE } from './group.js';
 
@@ -28,7 +30,7 @@ export function createDiscovery(
   const bonjour = new Bonjour();
 
   const service = bonjour.publish({
-    name: `lan-sync-db-${opts.peerId}`,
+    name: `mesh-db-${opts.peerId}`,
     type: serviceType,
     protocol: 'tcp',
     port: opts.port,
@@ -40,13 +42,13 @@ export function createDiscovery(
   });
 
   service.on('error', (err: Error) => {
-    console.warn(`[lan-sync-db] mDNS publish error: ${err.message}`);
+    console.warn(`[mesh-db] mDNS publish error: ${err.message}`);
   });
 
   const browser = bonjour.find({ type: serviceType }, (srv) => {
     if (closed) return;
 
-    if (srv.name === `lan-sync-db-${opts.peerId}`) return;
+    if (srv.name === `mesh-db-${opts.peerId}`) return;
 
     const txt = (srv.txt ?? {}) as Record<string, string>;
     if (txt.groupId !== opts.groupId) return;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { describe, test, expect, afterEach } from 'vitest';
 import { createLanSyncDb } from '../src/index.js';
 import { makeTempDir, removeDir, waitFor } from './helpers.js';
@@ -172,6 +174,85 @@ describe('sync', () => {
 
     await dbA.close();
     await dbB.close();
+  });
+
+  test('no groupKey peers connect and sync', async () => {
+    const dirA = makeTempDir();
+    const dirB = makeTempDir();
+    tempDirs.push(dirA, dirB);
+
+    const dbA = await createLanSyncDb({
+      dir: dirA,
+      tables: { items: { primaryKey: 'id' } },
+      sync: { enabled: true, port: 0, discovery: false },
+    });
+    const portA = dbA.port!;
+
+    const dbB = await createLanSyncDb({
+      dir: dirB,
+      tables: { items: { primaryKey: 'id' } },
+      sync: { enabled: true, port: 0, discovery: false },
+    });
+
+    await dbB.connect('127.0.0.1', portA);
+    await waitFor(
+      () => dbA.getPeers().some((p) => p.peerId === dbB.peerId),
+      3000,
+    );
+
+    await dbA.table('items').upsert({ id: 'a1', value: 'from-A' });
+
+    await waitFor(async () => {
+      const rows = await dbB.table('items').findAll();
+      return rows.some((r) => r.id === 'a1' && r.value === 'from-A');
+    }, 6000);
+
+    await dbA.close();
+    await dbB.close();
+  });
+
+  test('groupKey and no groupKey peers fail to connect', async () => {
+    const dirA = makeTempDir();
+    const dirB = makeTempDir();
+    tempDirs.push(dirA, dirB);
+
+    const dbA = await createLanSyncDb({
+      groupKey: 'group-alpha',
+      dir: dirA,
+      tables: { items: { primaryKey: 'id' } },
+      sync: { port: 0, discovery: false },
+    });
+    const portA = dbA.port!;
+
+    const dbB = await createLanSyncDb({
+      dir: dirB,
+      tables: { items: { primaryKey: 'id' } },
+      sync: { enabled: true, port: 0, discovery: false },
+    });
+
+    await expect(dbB.connect('127.0.0.1', portA)).rejects.toThrow();
+
+    await dbA.close();
+    await dbB.close();
+  });
+
+  test('sync enabled false disables all sync', async () => {
+    const dirA = makeTempDir();
+    tempDirs.push(dirA);
+
+    const db = await createLanSyncDb({
+      dir: dirA,
+      tables: { items: { primaryKey: 'id' } },
+      sync: { enabled: false },
+    });
+
+    expect(db.port).toBeUndefined();
+    expect(db.getPeers()).toEqual([]);
+    await expect(db.connect('127.0.0.1', 9999)).rejects.toThrow(
+      'Sync is disabled',
+    );
+
+    await db.close();
   });
 
   test('close does not hang', async () => {

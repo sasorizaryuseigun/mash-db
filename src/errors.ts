@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 export class PrimaryKeyMissingError extends Error {
   constructor(key: string) {
     super(`Missing required primary key: ${key}`);
@@ -20,8 +22,10 @@ export class RowNotFoundError extends Error {
 }
 
 export class GroupIdMismatchError extends Error {
-  constructor(expected: string, received: string) {
-    super(`Group ID mismatch: expected ${expected}, received ${received}`);
+  constructor(expected: string | undefined, received: string | undefined) {
+    super(
+      `Group ID mismatch: expected ${expected ?? '(none)'}, received ${received ?? '(none)'}`,
+    );
     this.name = 'GroupIdMismatchError';
   }
 }

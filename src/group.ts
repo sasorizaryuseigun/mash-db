@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { createHash } from 'node:crypto';
 import type { GroupIdentity } from './types.js';
 
@@ -12,4 +14,4 @@ export function createGroupIdentity(groupKey: string): GroupIdentity {
   };
 }
 
-export const DEFAULT_SERVICE_TYPE = '_lan-sync-db._tcp';
+export const DEFAULT_SERVICE_TYPE = '_mesh-db._tcp';

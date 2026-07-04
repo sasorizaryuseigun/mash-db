@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { createMergeableStore } from 'tinybase';
 import type { MergeableStore } from 'tinybase';
 import type { TableSchema, TableHandle } from './types.js';
@@ -90,7 +92,7 @@ function toCells(row: Record<string, unknown>): Record<string, CellValue> {
       cells[key] = value;
     } else {
       console.warn(
-        `[lan-sync-db] Non-scalar value for cell "${key}": ${typeof value}. Only string, number, and boolean are supported. Skipping.`,
+        `[mesh-db] Non-scalar value for cell "${key}": ${typeof value}. Only string, number, and boolean are supported. Skipping.`,
       );
     }
   }
